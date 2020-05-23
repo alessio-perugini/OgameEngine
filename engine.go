@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math"
@@ -191,10 +192,8 @@ func InitBattleDefenders(d []Slot, dnum int, objs int) []Unit {
 }
 
 func UniShoot(a *Unit, aweap int, b *Unit, absorbed, dm, dk *uint64) int64 {
-	var prc float64
-	var depleted float64
-	var apower int64
-	var adelta int64
+	var prc, depleted float64
+	var apower, adelta int64
 
 	if a.obj_type < 200 {
 		apower = fleetParam[a.obj_type-100].attack * (10 + int64(aweap)) / 10
@@ -289,6 +288,72 @@ func CheckFastDraw(aunits []Unit, aobjs int, dunits []Unit, dobjs int) int {
 	}
 
 	return 1
+}
+
+//TODO check rune on slot forse da int a rune boh
+//TODo check ptr pointer
+func GenSlot(ptr *string, units []Unit, slot, objnum int, a, d []Slot, attacker, techs bool) *string {
+	var s []Slot
+	if attacker {
+		s = a
+	} else {
+		s = d
+	}
+	var coll Slot
+	var u *Unit
+	var sum uint32
+
+	for i := 0; i < objnum; i++ {
+		u = &units[i]
+		if u.slot_id == rune(slot) {
+			if u.obj_type < 200 {
+				coll.fleet[u.obj_type-100]++
+				sum++
+			} else {
+				coll.def[u.obj_type-200]++
+				sum++
+			}
+		}
+	}
+
+	if techs {
+		if attacker { //TODO check %i
+			*ptr += fmt.Sprintf("i:%i;a:22:{", slot)
+		} else {
+			*ptr += fmt.Sprintf("i:%i;a:30:{", slot)
+		}
+	} else {
+		if attacker { //TODO check %i
+			*ptr += fmt.Sprintf("i:%i;a:19:{", slot)
+		} else {
+			*ptr += fmt.Sprintf("i:%i;a:27:{", slot)
+		}
+	}
+
+	*ptr += fmt.Sprintf("s:4:\"name\";s:%i:\"%s\";", len(s[slot].name), s[slot].name)
+	*ptr += fmt.Sprintf("s:2:\"id\";i:%i;", s[slot].id)
+	*ptr += fmt.Sprintf("s:1:\"g\";i:%i;", s[slot].g)
+	*ptr += fmt.Sprintf("s:1:\"s\";i:%i;", s[slot].s)
+	*ptr += fmt.Sprintf("s:1:\"p\";i:%i;", s[slot].p)
+
+	if techs {
+		*ptr += fmt.Sprintf("s:4:\"weap\";i:%i;", s[slot].weap)
+		*ptr += fmt.Sprintf("s:4:\"shld\";i:%i;", s[slot].shld)
+		*ptr += fmt.Sprintf("s:4:\"armr\";i:%i;", s[slot].armor)
+	}
+
+	for n := 0; n < 14; n++ {
+		*ptr += fmt.Sprintf("i:%i;i:%i;", 202+n, coll.fleet[n])
+	}
+
+	if !attacker {
+		for n := 0; n < 8; n++ {
+			*ptr += fmt.Sprintf("i:%i;i:%i;", 401+n, coll.def[n])
+		}
+	}
+
+	*ptr += fmt.Sprintf("}")
+	return ptr
 }
 
 func main() {
