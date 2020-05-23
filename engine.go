@@ -356,6 +356,64 @@ func GenSlot(ptr *string, units []Unit, slot, objnum int, a, d []Slot, attacker,
 	return ptr
 }
 
+func RapidFire(atyp, dtyp int) int {
+	rapidfire := 0
+
+	if atyp > 400 {
+		return 0
+	}
+
+	if atyp == 214 && (dtyp == 210 || dtyp == 212) && MyRand(1, 10000) > 8 {
+		rapidfire = 1
+	} else if atyp != 210 && (dtyp == 210 || dtyp == 212) && MyRand(1, 100) > 20 {
+		rapidfire = 1
+	} else if atyp == 205 && dtyp == 202 && MyRand(1, 100) > 33 {
+		rapidfire = 1
+	} else if atyp == 206 && dtyp == 204 && MyRand(1, 1000) > 166 {
+		rapidfire = 1
+	} else if atyp == 206 && dtyp == 401 && MyRand(1, 100) > 10 {
+		rapidfire = 1
+	} else if atyp == 211 && (dtyp == 401 || dtyp == 402) && MyRand(1, 100) > 20 {
+		rapidfire = 1
+	} else if atyp == 211 && (dtyp == 403 || dtyp == 405) && MyRand(1, 100) > 10 {
+		rapidfire = 1
+	} else if atyp == 213 && dtyp == 215 && MyRand(1, 100) > 50 {
+		rapidfire = 1
+	} else if atyp == 213 && dtyp == 402 && MyRand(1, 100) > 10 {
+		rapidfire = 1
+	} else if atyp == 215 && (dtyp == 202 || dtyp == 203) && MyRand(1, 100) > 20 {
+		rapidfire = 1
+	} else if atyp == 215 && (dtyp == 205 || dtyp == 206) && MyRand(1, 100) > 25 {
+		rapidfire = 1
+	} else if atyp == 215 && dtyp == 207 && MyRand(1, 1000) > 143 {
+		rapidfire = 1
+	} else if atyp == 214 && (dtyp == 202 || dtyp == 203 || dtyp == 208 || dtyp == 209) && MyRand(1, 1000) > 4 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 204 && MyRand(1, 1000) > 5 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 205 && MyRand(1, 1000) > 10 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 206 && MyRand(1, 1000) > 30 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 207 && MyRand(1, 1000) > 33 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 211 && MyRand(1, 1000) > 40 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 213 && MyRand(1, 1000) > 200 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 215 && MyRand(1, 1000) > 66 {
+		rapidfire = 1
+	} else if atyp == 214 && (dtyp == 401 || dtyp == 402) && MyRand(1, 1000) > 5 {
+		rapidfire = 1
+	} else if atyp == 214 && (dtyp == 403 || dtyp == 405) && MyRand(1, 1000) > 10 {
+		rapidfire = 1
+	} else if atyp == 214 && dtyp == 404 && MyRand(1, 1000) > 20 {
+		rapidfire = 1
+	}
+
+	return rapidfire
+}
+
 func main() {
 
 }
