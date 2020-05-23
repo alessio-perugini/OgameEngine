@@ -1,1 +1,3 @@
-module "OgameEngine"
+module OgameEngine
+
+go 1.14

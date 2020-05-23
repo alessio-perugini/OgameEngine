@@ -246,6 +246,51 @@ func UniShoot(a *Unit, aweap int, b *Unit, absorbed, dm, dk *uint64) int64 {
 	return apower
 }
 
+//TODO check if really wipes the exploded not really sure
+func WipeExploded(slot *[]Unit, amount int) int {
+	var src = *slot
+	exploded := 0
+	/*var tmp = src
+	p :=0
+
+	for i:=0; i<amount; i++ {
+		if !src[i].exploded {
+			tmp[p] = src[i]
+			p++
+		} else {
+			exploded++
+		}
+	}
+
+	*slot = tmp*/
+
+	for i := 0; i < amount; i++ {
+		if src[i].exploded {
+			src[i] = src[len(src)-1]
+			src = src[:len(src)-1]
+			exploded++
+		}
+	}
+
+	return exploded
+}
+
+func CheckFastDraw(aunits []Unit, aobjs int, dunits []Unit, dobjs int) int {
+	for i := 0; i < aobjs; i++ {
+		if aunits[i].hull != aunits[i].hullmax {
+			return 0
+		}
+	}
+
+	for i := 0; i < dobjs; i++ {
+		if dunits[i].hull != dunits[i].hullmax {
+			return 0
+		}
+	}
+
+	return 1
+}
+
 func main() {
 
 }
