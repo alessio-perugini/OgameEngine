@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/seehuhn/mt19937"
 	"io/ioutil"
 	"log"
 	"math"
@@ -12,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type TechParam struct {
@@ -124,11 +122,10 @@ func FileSave(filename string, data []byte) error {
 }
 
 func MyRand(a, b int) uint32 {
-	rng := rand.New(mt19937.New())
-	rng.Seed(time.Now().UnixNano())
-	final := uint32(a) + (uint32(rng.NormFloat64()*(1.0/4294967295.0)) * uint32(b-a+1))
-	fmt.Println(final)
-	return final
+	if b-a <= 0 {
+		return uint32(rand.Intn(1-0) + 0)
+	}
+	return uint32(rand.Intn(b-a) + a)
 }
 
 func SetDebrisOptions(did, fid int) {
@@ -468,7 +465,6 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 		/*ptr =*/ GenSlot(&ptr, aunits, slot, int(aobjs), a, d, true, true) //TODO uhm pointer stuff not sure
 	}
 	ptr.WriteString("}")
-	ptr.WriteString("a:5:{")
 	ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%d:{", dnum))
 
 	for slot := 0; slot < dnum; slot++ {
@@ -629,39 +625,6 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 	ResultBuffer = []rune(strings.Replace(prepareFinal, "X", fmt.Sprintf("%d", rounds), 1))
 
 	return 1
-}
-
-type SimParam struct { //TODO check ryne size
-	name   []rune //32
-	string []rune //64
-	value  uint32
-}
-
-var simargv []SimParam
-var simargc int64
-
-func hexize(stringa *string) {
-	//TODO to complete
-}
-
-//TODO sistematre
-func AddSimParam(name, stringa string) {
-	for i := 0; int64(i) < simargc; i++ {
-		if strings.Compare(name, string(simargv[i].name)) < 1 { //TODO check []rune size
-			simargv[i].string = []rune(stringa)
-			v, _ := strconv.ParseUint(string(simargv[i].string), 10, 32)
-			simargv[i].value = uint32(v)
-		}
-	}
-
-	hexize(&stringa) //TODO BOH
-
-	simargc++
-
-}
-
-func ParseQueryString(str string) {
-
 }
 
 func stringToInt(input string, base, bitsize int) int64 {

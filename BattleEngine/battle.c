@@ -283,7 +283,9 @@ void MySrand (unsigned long seed)
 // ���������� ��������� ����� � ��������� �� a �� b (������� a � b)
 unsigned long MyRand (unsigned long a, unsigned long b)
 {
-    return a + (unsigned long)(genrand_real1 () * (b - a + 1));
+    unsigned long result = a + (unsigned long)(genrand_real1 () * (b - a + 1));
+    printf("%d\n", result);
+    return result;
     //return a + (unsigned long)((rand ()*(1.0/RAND_MAX)) * (b - a + 1));
 }
 
@@ -716,7 +718,7 @@ int DoBattle (Slot *a, int anum, Slot *d, int dnum)
         ptr += sprintf ( ptr, "}" );
         ptr += sprintf ( ptr, "}" );
 
-        if (fastdraw) { rounds ++; break; }
+        if (fastdraw) { printf("CIAO"); rounds ++; break; }
     }
 
     *round_patch = '0' + (rounds);
@@ -943,7 +945,7 @@ void StartBattle (char *text, int battle_id)
     a = (Slot *)malloc ( anum * sizeof (Slot) );    // �������� ������ ��� �����.
     memset ( a, 0, anum * sizeof (Slot) );
     d = (Slot *)malloc ( dnum * sizeof (Slot) );
-    memet ( d, 0, dnum * sizeof (Slot) );
+    memset ( d, 0, dnum * sizeof (Slot) );
 
     // ���������.
     for (i=0; i<anum; i++)
@@ -1065,7 +1067,7 @@ void main(int argc, char **argv)
     if ( argc < 2 ) return;
 
     ParseQueryString ( argv[1] );
-    PrintParams ();
+    //PrintParams ();
 
     // ��������� �������� ���� � ������� �������� ������.
     {
