@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 )
@@ -24,10 +25,10 @@ type Slot struct {
 	id                int
 }
 
-type Uint struct {
+type Unit struct {
 	slot_id           rune
 	obj_type          rune
-	exploded          rune
+	exploded          bool
 	dummy             rune
 	hull, hullmax     int64
 	shield, shieldmax int64
@@ -140,8 +141,8 @@ func SetDebrisOptions(did, fid int) {
 func SetRapidfire(enable int) { Rapidfire = enable & 1 } //TODO check enable & 1
 
 //TODO dangerous stuff here could explode all!!!!
-func InitBattleAttackers(a []Slot, anum int, objs int) []Uint {
-	u := make([]Uint, objs)
+func InitBattleAttackers(a []Slot, anum int, objs int) []Unit {
+	u := make([]Unit, objs)
 	ucnt := 0
 	n := 0
 
@@ -160,8 +161,8 @@ func InitBattleAttackers(a []Slot, anum int, objs int) []Uint {
 	return u
 }
 
-func InitBattleDefenders(d []Slot, dnum int, objs int) []Uint {
-	u := make([]Uint, objs)
+func InitBattleDefenders(d []Slot, dnum int, objs int) []Unit {
+	u := make([]Unit, objs)
 	ucnt := 0
 	n := 0
 
@@ -175,10 +176,10 @@ func InitBattleDefenders(d []Slot, dnum int, objs int) []Uint {
 				ucnt++
 			}
 		}
-		for n = 0; n < 8; n++{
+		for n = 0; n < 8; n++ {
 			for obj := 0; uint32(obj) < d[i].def[n]; obj++ {
 				u[ucnt].hull = u[ucnt].hullmax
-				u[ucnt].hullmax = int64(float64(defenseParam[n].structure) * 0.1 * (10+float64(d[i].armor)) / 10)
+				u[ucnt].hullmax = int64(float64(defenseParam[n].structure) * 0.1 * (10 + float64(d[i].armor)) / 10)
 				u[ucnt].obj_type = rune(200 + n)
 				u[ucnt].slot_id = rune(i) //did
 				ucnt++
@@ -189,6 +190,61 @@ func InitBattleDefenders(d []Slot, dnum int, objs int) []Uint {
 	return u
 }
 
+func UniShoot(a *Unit, aweap int, b *Unit, absorbed, dm, dk *uint64) int64 {
+	var prc float64
+	var depleted float64
+	var apower int64
+	var adelta int64
+
+	if a.obj_type < 200 {
+		apower = fleetParam[a.obj_type-100].attack * (10 + int64(aweap)) / 10
+	} else {
+		return apower
+	}
+
+	if b.exploded {
+		return apower
+	}
+
+	if b.shield == 0 {
+		if apower >= b.hull {
+			b.hull = 0
+		} else {
+			b.hull -= apower
+		}
+	} else {
+		prc = float64(b.shieldmax) * 0.01
+		depleted = math.Floor(float64(apower) / prc)
+		if b.shield < int64(depleted*prc) {
+			*absorbed += uint64(b.shield) //TODO check pointer
+			adelta = apower - b.shield
+			if adelta >= b.hull {
+				b.hull = 0
+			} else {
+				b.hull -= adelta
+			}
+			b.shield = 0
+		} else {
+			b.shield -= int64(depleted * prc)
+			*absorbed += uint64(apower) //TODO check pointer
+		}
+	}
+
+	if b.hull <= int64(float64(b.hullmax)*0.7) && b.shield == 0 { // �������� � �������� ����.
+		if MyRand(0, 99) >= uint32((b.hull*100)/b.hullmax) || b.hull == 0 {
+			if b.obj_type >= 200 {
+				*dm += uint64(math.Ceil(float64(DefensePrice[b.obj_type-200].m) * float64(DefenseInDebris/100.0)))
+				*dk += uint64(math.Ceil(float64(DefensePrice[b.obj_type-200].k) * float64(DefenseInDebris/100.0)))
+			} else {
+				*dm += uint64(math.Ceil(float64(DefensePrice[b.obj_type-100].m) * float64(FleetInDebris/100.0)))
+				*dk += uint64(math.Ceil(float64(DefensePrice[b.obj_type-100].k) * float64(FleetInDebris/100.0)))
+			}
+			b.exploded = true
+		}
+	}
+
+	return apower
+}
 
 func main() {
 
