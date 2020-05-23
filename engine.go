@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/seehuhn/mt19937"
 	"io/ioutil"
 	"log"
 	"math"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type TechParam struct {
@@ -121,8 +123,12 @@ func FileSave(filename string, data []byte) error {
 	return nil
 }
 
-func MyRand(min, max int) uint32 {
-	return uint32(rand.Intn(max-min) + min) //TODO forse +1??
+func MyRand(a, b int) uint32 {
+	rng := rand.New(mt19937.New())
+	rng.Seed(time.Now().UnixNano())
+	final := uint32(a) + (uint32(rng.NormFloat64()*(1.0/4294967295.0)) * uint32(b-a+1))
+	fmt.Println(final)
+	return final
 }
 
 func SetDebrisOptions(did, fid int) {
@@ -238,8 +244,8 @@ func UnitShoot(a Unit, aweap int, b *Unit, absorbed, dm, dk *uint64) int64 {
 				*dm += uint64(math.Ceil(float64(DefensePrice[b.obj_type-200].m) * float64(DefenseInDebris/100.0)))
 				*dk += uint64(math.Ceil(float64(DefensePrice[b.obj_type-200].k) * float64(DefenseInDebris/100.0)))
 			} else {
-				*dm += uint64(math.Ceil(float64(DefensePrice[b.obj_type-100].m) * float64(FleetInDebris/100.0)))
-				*dk += uint64(math.Ceil(float64(DefensePrice[b.obj_type-100].k) * float64(FleetInDebris/100.0)))
+				*dm += uint64(math.Ceil(float64(FleetPrice[b.obj_type-100].m) * float64(FleetInDebris/100.0)))
+				*dk += uint64(math.Ceil(float64(FleetPrice[b.obj_type-100].k) * float64(FleetInDebris/100.0)))
 			}
 			b.exploded = true
 		}
@@ -252,10 +258,10 @@ func UnitShoot(a Unit, aweap int, b *Unit, absorbed, dm, dk *uint64) int64 {
 func WipeExploded(slot *[]Unit, amount int) int {
 	var src = *slot
 	exploded := 0
-	/*var tmp = src
-	p :=0
+	var tmp = src
+	p := 0
 
-	for i:=0; i<amount; i++ {
+	for i := 0; i < amount; i++ {
 		if !src[i].exploded {
 			tmp[p] = src[i]
 			p++
@@ -264,16 +270,16 @@ func WipeExploded(slot *[]Unit, amount int) int {
 		}
 	}
 
-	*slot = tmp*/
-
-	for i := 0; i < amount; i++ {
-		if src[i].exploded {
-			src[i] = src[len(src)-1]
-			src = src[:len(src)-1]
-			exploded++
+	*slot = tmp
+	/*
+		for i := 0; i < amount; i++ {
+			if src[i].exploded {
+				src[i] = src[len(src)-1]
+				src = src[:len(src)-1]
+				exploded++
+			}
 		}
-	}
-
+	*/
 	return exploded
 }
 
@@ -295,7 +301,7 @@ func CheckFastDraw(aunits []Unit, aobjs int, dunits []Unit, dobjs int) bool {
 
 //TODO check rune on slot forse da int a rune boh
 //TODo check ptr pointer
-func GenSlot(ptr strings.Builder, units []Unit, slot, objnum int, a, d []Slot, attacker, techs bool) strings.Builder {
+func GenSlot(ptr *strings.Builder, units []Unit, slot, objnum int, a, d []Slot, attacker, techs bool) /*strings.Builder*/ {
 	var s []Slot
 	if attacker {
 		s = a
@@ -355,7 +361,7 @@ func GenSlot(ptr strings.Builder, units []Unit, slot, objnum int, a, d []Slot, a
 	}
 
 	ptr.WriteString(fmt.Sprintf("}"))
-	return ptr
+	//return *ptr //TODO CHECKTHIS
 }
 
 func RapidFire(atyp, dtyp int) bool {
@@ -459,14 +465,14 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 	ptr.WriteString("s:6:\"before\";a:2:{")
 	ptr.WriteString(fmt.Sprintf("s:9:\"attackers\";a:%d:{", anum))
 	for slot := 0; slot < anum; slot++ {
-		ptr = GenSlot(ptr, aunits, slot, int(aobjs), a, d, true, true) //TODO uhm pointer stuff not sure
+		/*ptr =*/ GenSlot(&ptr, aunits, slot, int(aobjs), a, d, true, true) //TODO uhm pointer stuff not sure
 	}
 	ptr.WriteString("}")
 	ptr.WriteString("a:5:{")
 	ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%d:{", dnum))
 
 	for slot := 0; slot < dnum; slot++ {
-		ptr = GenSlot(ptr, dunits, slot, int(dobjs), a, d, false, true)
+		/*ptr =*/ GenSlot(&ptr, dunits, slot, int(dobjs), a, d, false, true)
 	}
 	ptr.WriteString("}")
 	ptr.WriteString("}")
@@ -592,12 +598,12 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 		ptr.WriteString(fmt.Sprintf("s:7:\"aabsorb\";d:%d;", int64(absorbed[0])))
 		ptr.WriteString(fmt.Sprintf("s:9:\"attackers\";a:%d:{", anum))
 		for slot := 0; slot < anum; slot++ {
-			ptr = GenSlot(ptr, aunits, slot, int(aobjs), a, d, true, false)
+			/*ptr = */ GenSlot(&ptr, aunits, slot, int(aobjs), a, d, true, false)
 		}
 		ptr.WriteString("}")
 		ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%d:{", dnum))
 		for slot := 0; slot < dnum; slot++ {
-			ptr = GenSlot(ptr, dunits, slot, int(dobjs), a, d, false, false)
+			/*ptr = */ GenSlot(&ptr, dunits, slot, int(dobjs), a, d, false, false)
 		}
 		ptr.WriteString("}")
 		ptr.WriteString("}")
@@ -664,7 +670,7 @@ func stringToInt(input string, base, bitsize int) int64 {
 }
 
 func StartBattle(text string, battle_id int64) {
-	var rf, fid, did, res, anum, dnum int
+	var rf, fid, did, res, anum, dnum, firstXParam int
 	var a, d []Slot
 	var buf strings.Builder
 
@@ -692,70 +698,75 @@ func StartBattle(text string, battle_id int64) {
 		case "Defenders":
 			dnum = int(stringToInt(data, 10, 64))
 			d = make([]Slot, dnum)
-		case "AttackerN":
-			for i := 0; i < anum; i++ {
-				buf.Reset()
-				buf.WriteString(fmt.Sprintf("Attacker%d", i))
-				index := strings.LastIndex(data, ">")
-				a[i].name = []rune(data[2:index]) //get name in the <>
-				data = data[index+2:]             //delete name
-				fmt.Fscanf(strings.NewReader(data), "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-					&a[i].id,
-					&a[i].g, &a[i].s, &a[i].p,
-					&a[i].weap, &a[i].shld, &a[i].armor,
-					&a[i].fleet[0],
-					&a[i].fleet[1],
-					&a[i].fleet[2],
-					&a[i].fleet[3],
-					&a[i].fleet[4],
-					&a[i].fleet[5],
-					&a[i].fleet[6],
-					&a[i].fleet[7],
-					&a[i].fleet[8],
-					&a[i].fleet[9],
-					&a[i].fleet[10],
-					&a[i].fleet[11],
-					&a[i].fleet[12],
-					&a[i].fleet[13],
-				)
-			}
-		case "DefenderM":
-			for i := 0; i < dnum; i++ {
-				buf.Reset()
-				buf.WriteString(fmt.Sprintf("Attacker%d", i))
-				index := strings.LastIndex(data, ">")
-				d[i].name = []rune(data[2:index]) //get name in the <>
-				data = data[index+2:]             //delete name
-				fmt.Fscanf(strings.NewReader(data), "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-					&d[i].id,
-					&d[i].g, &d[i].s, &d[i].p,
-					&d[i].weap, &d[i].shld, &d[i].armor,
-					&d[i].fleet[0],  // MT
-					&d[i].fleet[1],  // BT
-					&d[i].fleet[2],  // LF
-					&d[i].fleet[3],  // HF
-					&d[i].fleet[4],  // CR
-					&d[i].fleet[5],  // LINK
-					&d[i].fleet[6],  // COLON
-					&d[i].fleet[7],  // REC
-					&d[i].fleet[8],  // SPY
-					&d[i].fleet[9],  // BOMB
-					&d[i].fleet[10], // SS
-					&d[i].fleet[11], // DEST
-					&d[i].fleet[12], // DS
-					&d[i].fleet[13], // BC
-					&d[i].def[0],    // RT
-					&d[i].def[1],    // LL
-					&d[i].def[2],    // HL
-					&d[i].def[3],    // GS
-					&d[i].def[4],    // IC
-					&d[i].def[5],    // PL
-					&d[i].def[6],    // SDOM
-					&d[i].def[7],    // LDOM
-				)
-			}
 		}
 
+		if firstXParam >= 5 {
+			if strings.Contains(name, "Attacker") {
+				for i := 0; i < anum; i++ {
+					buf.Reset()
+					buf.WriteString(fmt.Sprintf("Attacker%d", i))
+					index := strings.LastIndex(data, ">")
+					a[i].name = []rune(data[2:index]) //get name in the <>
+					data = data[index+2:]             //delete name
+					fmt.Fscanf(strings.NewReader(data), "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+						&a[i].id,
+						&a[i].g, &a[i].s, &a[i].p,
+						&a[i].weap, &a[i].shld, &a[i].armor,
+						&a[i].fleet[0],
+						&a[i].fleet[1],
+						&a[i].fleet[2],
+						&a[i].fleet[3],
+						&a[i].fleet[4],
+						&a[i].fleet[5],
+						&a[i].fleet[6],
+						&a[i].fleet[7],
+						&a[i].fleet[8],
+						&a[i].fleet[9],
+						&a[i].fleet[10],
+						&a[i].fleet[11],
+						&a[i].fleet[12],
+						&a[i].fleet[13],
+					)
+				}
+			}
+			if strings.Contains(name, "Defender") {
+				for i := 0; i < dnum; i++ {
+					buf.Reset()
+					buf.WriteString(fmt.Sprintf("Attacker%d", i))
+					index := strings.LastIndex(data, ">")
+					d[i].name = []rune(data[2:index]) //get name in the <>
+					data = data[index+2:]             //delete name
+					fmt.Fscanf(strings.NewReader(data), "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+						&d[i].id,
+						&d[i].g, &d[i].s, &d[i].p,
+						&d[i].weap, &d[i].shld, &d[i].armor,
+						&d[i].fleet[0],  // MT
+						&d[i].fleet[1],  // BT
+						&d[i].fleet[2],  // LF
+						&d[i].fleet[3],  // HF
+						&d[i].fleet[4],  // CR
+						&d[i].fleet[5],  // LINK
+						&d[i].fleet[6],  // COLON
+						&d[i].fleet[7],  // REC
+						&d[i].fleet[8],  // SPY
+						&d[i].fleet[9],  // BOMB
+						&d[i].fleet[10], // SS
+						&d[i].fleet[11], // DEST
+						&d[i].fleet[12], // DS
+						&d[i].fleet[13], // BC
+						&d[i].def[0],    // RT
+						&d[i].def[1],    // LL
+						&d[i].def[2],    // HL
+						&d[i].def[3],    // GS
+						&d[i].def[4],    // IC
+						&d[i].def[5],    // PL
+						&d[i].def[6],    // SDOM
+						&d[i].def[7],    // LDOM
+					)
+				}
+			}
+		}
+		firstXParam++
 	}
 
 	if err := scanner.Err(); err != nil {
