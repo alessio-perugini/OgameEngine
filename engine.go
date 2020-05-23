@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +24,7 @@ type Slot struct {
 	fleet             [14]uint32
 	def               [8]uint32
 	weap, shld, armor int
-	name              [64]rune
+	name              []rune //64
 	g, s, p           int
 	id                int
 }
@@ -40,7 +42,7 @@ type UnitPrice struct {
 	m, k, d int64
 }
 
-var ResultBuffer [64 * 1024]rune
+var ResultBuffer = make([]rune, 64*1024) //64 * 1024
 var DefenseInDebris int
 var FleetInDebris = 30
 var Rapidfire = 1
@@ -330,8 +332,7 @@ func GenSlot(ptr strings.Builder, units []Unit, slot, objnum int, a, d []Slot, a
 			ptr.WriteString(fmt.Sprintf("i:%d;a:27:{", slot))
 		}
 	}
-	//TODO print of %v should be %s
-	ptr.WriteString(fmt.Sprintf("s:4:\"name\";s:%d:\"%v\";", len(s[slot].name), s[slot].name))
+	ptr.WriteString(fmt.Sprintf("s:4:\"name\";s:%d:\"%s\";", len(s[slot].name), string(s[slot].name)))
 	ptr.WriteString(fmt.Sprintf("s:2:\"id\";i:%d;", s[slot].id))
 	ptr.WriteString(fmt.Sprintf("s:1:\"g\";i:%d;", s[slot].g))
 	ptr.WriteString(fmt.Sprintf("s:1:\"s\";i:%d;", s[slot].s))
@@ -421,7 +422,6 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 	var fastdraw, rapidfire bool
 	var aunits, dunits []Unit
 	var unit Unit
-	//var ptr = ResultBuffer //TODO optimize this buffer
 	var res string //TODO capire a cosa serve questa var: round_patch string
 	var dm, dk uint64
 	var ptr strings.Builder
@@ -471,7 +471,6 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 	ptr.WriteString("}")
 	ptr.WriteString("}")
 
-	//round_patch = ptr + 15 //TODO result buffer as rune?
 	ptr.WriteString("s:6:\"rounds\";a:X:{")
 
 	for rounds = 0; rounds < 6; rounds++ {
@@ -609,9 +608,6 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 		}
 	}
 
-	//TODO capire questo
-	//*round_patch = '0' + (rounds);
-
 	if aobjs > 0 && dobjs == 0 {
 		res = "awon"
 	} else if dobjs > 0 && aobjs == 0 {
@@ -623,10 +619,180 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 	ptr.WriteString(fmt.Sprintf("}s:6:\"result\";s:4:\"%s\";", res))
 	ptr.WriteString(fmt.Sprintf("s:2:\"dm\";d:%d;", int64(dm)))
 	ptr.WriteString(fmt.Sprintf("s:2:\"dk\";d:%d;}", int64(dk)))
+	prepareFinal := ptr.String()
+	ResultBuffer = []rune(strings.Replace(prepareFinal, "X", fmt.Sprintf("%d", rounds), 1))
 
 	return 1
 }
 
-func main() {
+type SimParam struct { //TODO check ryne size
+	name   []rune //32
+	string []rune //64
+	value  uint32
+}
 
+var simargv []SimParam
+var simargc int64
+
+func hexize(stringa *string) {
+	//TODO to complete
+}
+
+//TODO sistematre
+func AddSimParam(name, stringa string) {
+	for i := 0; int64(i) < simargc; i++ {
+		if strings.Compare(name, string(simargv[i].name)) < 1 { //TODO check []rune size
+			simargv[i].string = []rune(stringa)
+			v, _ := strconv.ParseUint(string(simargv[i].string), 10, 32)
+			simargv[i].value = uint32(v)
+		}
+	}
+
+	hexize(&stringa) //TODO BOH
+
+	simargc++
+
+}
+
+func ParseQueryString(str string) {
+
+}
+
+func stringToInt(input string, base, bitsize int) int64 {
+	v, _ := strconv.ParseInt(input, base, bitsize)
+	return v
+}
+
+func StartBattle(text string, battle_id int64) {
+	var rf, fid, did, res, anum, dnum int
+	var a, d []Slot
+	var buf strings.Builder
+
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		lineSplit := strings.Split(line, " = ")
+		name := lineSplit[0]
+		data := lineSplit[1]
+
+		switch name {
+		case "Rapidfire":
+			rf = int(stringToInt(data, 10, 64))
+		case "FID":
+			fid = int(stringToInt(data, 10, 64))
+		case "DID":
+			did = int(stringToInt(data, 10, 64))
+		case "Attackers":
+			anum = int(stringToInt(data, 10, 64))
+			a = make([]Slot, anum)
+		case "Defenders":
+			dnum = int(stringToInt(data, 10, 64))
+			d = make([]Slot, dnum)
+		case "AttackerN":
+			for i := 0; i < anum; i++ {
+				buf.Reset()
+				buf.WriteString(fmt.Sprintf("Attacker%d", i))
+				index := strings.LastIndex(data, ">")
+				a[i].name = []rune(data[2:index]) //get name in the <>
+				data = data[index+2:]             //delete name
+				fmt.Fscanf(strings.NewReader(data), "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+					&a[i].id,
+					&a[i].g, &a[i].s, &a[i].p,
+					&a[i].weap, &a[i].shld, &a[i].armor,
+					&a[i].fleet[0],
+					&a[i].fleet[1],
+					&a[i].fleet[2],
+					&a[i].fleet[3],
+					&a[i].fleet[4],
+					&a[i].fleet[5],
+					&a[i].fleet[6],
+					&a[i].fleet[7],
+					&a[i].fleet[8],
+					&a[i].fleet[9],
+					&a[i].fleet[10],
+					&a[i].fleet[11],
+					&a[i].fleet[12],
+					&a[i].fleet[13],
+				)
+			}
+		case "DefenderM":
+			for i := 0; i < dnum; i++ {
+				buf.Reset()
+				buf.WriteString(fmt.Sprintf("Attacker%d", i))
+				index := strings.LastIndex(data, ">")
+				d[i].name = []rune(data[2:index]) //get name in the <>
+				data = data[index+2:]             //delete name
+				fmt.Fscanf(strings.NewReader(data), "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+					&d[i].id,
+					&d[i].g, &d[i].s, &d[i].p,
+					&d[i].weap, &d[i].shld, &d[i].armor,
+					&d[i].fleet[0],  // MT
+					&d[i].fleet[1],  // BT
+					&d[i].fleet[2],  // LF
+					&d[i].fleet[3],  // HF
+					&d[i].fleet[4],  // CR
+					&d[i].fleet[5],  // LINK
+					&d[i].fleet[6],  // COLON
+					&d[i].fleet[7],  // REC
+					&d[i].fleet[8],  // SPY
+					&d[i].fleet[9],  // BOMB
+					&d[i].fleet[10], // SS
+					&d[i].fleet[11], // DEST
+					&d[i].fleet[12], // DS
+					&d[i].fleet[13], // BC
+					&d[i].def[0],    // RT
+					&d[i].def[1],    // LL
+					&d[i].def[2],    // HL
+					&d[i].def[3],    // GS
+					&d[i].def[4],    // IC
+					&d[i].def[5],    // PL
+					&d[i].def[6],    // SDOM
+					&d[i].def[7],    // LDOM
+				)
+			}
+		}
+
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	SetDebrisOptions(did, fid)
+	SetRapidfire(rf)
+
+	res = DoBattle(a, anum, d, dnum)
+
+	if res > 0 {
+		err := FileSave(fmt.Sprintf("battleresult/battle_%d.txt", battle_id), []byte(string(ResultBuffer)))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		log.Fatal("too few args")
+	}
+	fmt.Println(os.Args)
+
+	paramBattleId := os.Args[1]
+	param := strings.Split(paramBattleId, "=")
+
+	if len(param) < 2 {
+		log.Fatal("incorrect battle id format")
+	}
+
+	battleId, err := strconv.ParseInt(param[1], 10, 64)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	filename := fmt.Sprintf("battledata/battle_%d.txt", battleId)
+	battleData := FileLoad(filename) //TODO check error in fileload
+	StartBattle(battleData, battleId)
 }
