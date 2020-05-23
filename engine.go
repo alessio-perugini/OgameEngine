@@ -318,38 +318,38 @@ func GenSlot(ptr strings.Builder, units []Unit, slot, objnum int, a, d []Slot, a
 	}
 
 	if techs {
-		if attacker { //TODO check %i
-			ptr.WriteString(fmt.Sprintf("i:%i;a:22:{", slot))
+		if attacker { //TODO check %d
+			ptr.WriteString(fmt.Sprintf("i:%d;a:22:{", slot))
 		} else {
-			ptr.WriteString(fmt.Sprintf("i:%i;a:30:{", slot))
+			ptr.WriteString(fmt.Sprintf("i:%d;a:30:{", slot))
 		}
 	} else {
-		if attacker { //TODO check %i
-			ptr.WriteString(fmt.Sprintf("i:%i;a:19:{", slot))
+		if attacker { //TODO check %d
+			ptr.WriteString(fmt.Sprintf("i:%d;a:19:{", slot))
 		} else {
-			ptr.WriteString(fmt.Sprintf("i:%i;a:27:{", slot))
+			ptr.WriteString(fmt.Sprintf("i:%d;a:27:{", slot))
 		}
 	}
-
-	ptr.WriteString(fmt.Sprintf("s:4:\"name\";s:%i:\"%s\";", len(s[slot].name), s[slot].name))
-	ptr.WriteString(fmt.Sprintf("s:2:\"id\";i:%i;", s[slot].id))
-	ptr.WriteString(fmt.Sprintf("s:1:\"g\";i:%i;", s[slot].g))
-	ptr.WriteString(fmt.Sprintf("s:1:\"s\";i:%i;", s[slot].s))
-	ptr.WriteString(fmt.Sprintf("s:1:\"p\";i:%i;", s[slot].p))
+	//TODO print of %v should be %s
+	ptr.WriteString(fmt.Sprintf("s:4:\"name\";s:%d:\"%v\";", len(s[slot].name), s[slot].name))
+	ptr.WriteString(fmt.Sprintf("s:2:\"id\";i:%d;", s[slot].id))
+	ptr.WriteString(fmt.Sprintf("s:1:\"g\";i:%d;", s[slot].g))
+	ptr.WriteString(fmt.Sprintf("s:1:\"s\";i:%d;", s[slot].s))
+	ptr.WriteString(fmt.Sprintf("s:1:\"p\";i:%d;", s[slot].p))
 
 	if techs {
-		ptr.WriteString(fmt.Sprintf("s:4:\"weap\";i:%i;", s[slot].weap))
-		ptr.WriteString(fmt.Sprintf("s:4:\"shld\";i:%i;", s[slot].shld))
-		ptr.WriteString(fmt.Sprintf("s:4:\"armr\";i:%i;", s[slot].armor))
+		ptr.WriteString(fmt.Sprintf("s:4:\"weap\";i:%d;", s[slot].weap))
+		ptr.WriteString(fmt.Sprintf("s:4:\"shld\";i:%d;", s[slot].shld))
+		ptr.WriteString(fmt.Sprintf("s:4:\"armr\";i:%d;", s[slot].armor))
 	}
 
 	for n := 0; n < 14; n++ {
-		ptr.WriteString(fmt.Sprintf("i:%i;i:%i;", 202+n, coll.fleet[n]))
+		ptr.WriteString(fmt.Sprintf("i:%d;i:%d;", 202+n, coll.fleet[n]))
 	}
 
 	if !attacker {
 		for n := 0; n < 8; n++ {
-			ptr.WriteString(fmt.Sprintf("i:%i;i:%i;", 401+n, coll.def[n]))
+			ptr.WriteString(fmt.Sprintf("i:%d;i:%d;", 401+n, coll.def[n]))
 		}
 	}
 
@@ -457,13 +457,13 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 
 	ptr.WriteString("a:5:{")
 	ptr.WriteString("s:6:\"before\";a:2:{")
-	ptr.WriteString(fmt.Sprintf("s:9:\"attackers\";a:%i:{", anum))
+	ptr.WriteString(fmt.Sprintf("s:9:\"attackers\";a:%d:{", anum))
 	for slot := 0; slot < anum; slot++ {
 		ptr = GenSlot(ptr, aunits, slot, int(aobjs), a, d, true, true) //TODO uhm pointer stuff not sure
 	}
 	ptr.WriteString("}")
 	ptr.WriteString("a:5:{")
-	ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%i:{", dnum))
+	ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%d:{", dnum))
 
 	for slot := 0; slot < dnum; slot++ {
 		ptr = GenSlot(ptr, dunits, slot, int(dobjs), a, d, false, true)
@@ -584,19 +584,19 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 		dobjs -= int64(WipeExploded(&dunits, int(dobjs)))
 
 		// Round.
-		ptr.WriteString(fmt.Sprintf("i:%i;a:8:", rounds))
+		ptr.WriteString(fmt.Sprintf("i:%d;a:8:", rounds))
 		ptr.WriteString(fmt.Sprintf("{s:6:\"ashoot\";d:%d;", int64(shoots[0])))
 		ptr.WriteString(fmt.Sprintf("s:6:\"apower\";d:%d;", int64(spower[0])))
 		ptr.WriteString(fmt.Sprintf("s:7:\"dabsorb\";d:%d;", int64(absorbed[1])))
 		ptr.WriteString(fmt.Sprintf("s:6:\"dshoot\";d:%d;", int64(shoots[1])))
 		ptr.WriteString(fmt.Sprintf("s:6:\"dpower\";d:%d;", int64(spower[1])))
 		ptr.WriteString(fmt.Sprintf("s:7:\"aabsorb\";d:%d;", int64(absorbed[0])))
-		ptr.WriteString(fmt.Sprintf("s:9:\"attackers\";a:%i:{", anum))
+		ptr.WriteString(fmt.Sprintf("s:9:\"attackers\";a:%d:{", anum))
 		for slot := 0; slot < anum; slot++ {
 			ptr = GenSlot(ptr, aunits, slot, int(aobjs), a, d, true, false)
 		}
 		ptr.WriteString("}")
-		ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%i:{", dnum))
+		ptr.WriteString(fmt.Sprintf("s:9:\"defenders\";a:%d:{", dnum))
 		for slot := 0; slot < dnum; slot++ {
 			ptr = GenSlot(ptr, dunits, slot, int(dobjs), a, d, false, false)
 		}
