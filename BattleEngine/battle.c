@@ -283,8 +283,12 @@ void MySrand (unsigned long seed)
 // ���������� ��������� ����� � ��������� �� a �� b (������� a � b)
 unsigned long MyRand (unsigned long a, unsigned long b)
 {
-    unsigned long result = a + (unsigned long)(genrand_real1 () * (b - a + 1));
-    printf("%d\n", result);
+    if ((b - a) <= 0) {
+        printf("LOG: negativo %d", b-a);
+    }
+    double gen = genrand_real1();
+    printf("%d ", gen);
+    unsigned long result = a + (unsigned long)(gen * (b - a + 1));
     return result;
     //return a + (unsigned long)((rand ()*(1.0/RAND_MAX)) * (b - a + 1));
 }
@@ -615,7 +619,10 @@ int DoBattle (Slot *a, int anum, Slot *d, int dnum)
 
     for (rounds=0; rounds<6; rounds++)
     {
-        if (aobjs == 0 || dobjs == 0) break;
+        if (aobjs == 0 || dobjs == 0) {
+            fprintf(stdout, "LOG: rounds: %d\n", rounds);
+            break;
+        }
 
         // �������� ����������.
         shoots[0] = shoots[1] = 0;
@@ -663,6 +670,7 @@ int DoBattle (Slot *a, int anum, Slot *d, int dnum)
                 }
             }
         }
+        printf("####################\n\n\n####################\n");
         for (slot=0; slot<dnum; slot++)     // �������������
         {
             for (i=0; i<dobjs; i++) {
@@ -690,13 +698,14 @@ int DoBattle (Slot *a, int anum, Slot *d, int dnum)
                 }
             }
         }
-
+        printf("\n\n\n");
         // ������� �����?
         fastdraw = CheckFastDraw (aunits, aobjs, dunits, dobjs);
 
-        // ��������� ���������� ������� � �������.
+        printf("LOG aobjs: %d dobjs: %d\n", aobjs, dobjs);
         aobjs -= WipeExploded (&aunits, aobjs);
         dobjs -= WipeExploded (&dunits, dobjs);
+        printf("LOG aobjs: %d dobjs: %d\n", aobjs, dobjs);
 
         // Round.
         ptr += sprintf ( ptr, "i:%i;a:8:", rounds );

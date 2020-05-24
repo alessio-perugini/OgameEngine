@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/seehuhn/mt19937"
 	"io/ioutil"
 	"log"
 	"math"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type TechParam struct {
@@ -121,11 +123,13 @@ func FileSave(filename string, data []byte) error {
 	return nil
 }
 
-func MyRand(a, b int) uint32 {
-	if b-a <= 0 {
-		return uint32(rand.Intn(1-0) + 0)
-	}
-	return uint32(rand.Intn(b-a) + a)
+func MyRand(a, b uint32) uint32 {
+	rng := rand.New(mt19937.New())
+	rng.Seed(time.Now().UnixNano())
+
+	x := rng.Uint32()
+	final := uint32(float32(x) * float32(1.0/4294967295.0))
+	return a + (final * (b - a + 1))
 }
 
 func SetDebrisOptions(did, fid int) {
@@ -253,7 +257,7 @@ func UnitShoot(a Unit, aweap int, b *Unit, absorbed, dm, dk *uint64) int64 {
 
 //TODO check if really wipes the exploded not really sure
 func WipeExploded(slot *[]Unit, amount int) int {
-	var src = *slot
+	/*var src = *slot
 	exploded := 0
 	var tmp = src
 	p := 0
@@ -266,17 +270,21 @@ func WipeExploded(slot *[]Unit, amount int) int {
 			exploded++
 		}
 	}
-
 	*slot = tmp
-	/*
-		for i := 0; i < amount; i++ {
-			if src[i].exploded {
-				src[i] = src[len(src)-1]
-				src = src[:len(src)-1]
-				exploded++
-			}
-		}
 	*/
+
+	exploded := 0
+	var a = *slot
+	tmp := a[:0]
+	for _, p := range a {
+		if !p.exploded {
+			tmp = append(tmp, p)
+		} else {
+			exploded++
+		}
+	}
+	*slot = tmp
+
 	return exploded
 }
 
@@ -477,6 +485,7 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 
 	for rounds = 0; rounds < 6; rounds++ {
 		if aobjs == 0 || dobjs == 0 {
+			log.Println("LOG: STOP", rounds)
 			break
 		}
 
@@ -518,7 +527,7 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 				unit = aunits[i]
 				if int(unit.slot_id) == slot { //TODO check this
 					for rapidfire {
-						idx = int64(MyRand(0, int(dobjs-1)))
+						idx = int64(MyRand(0, uint32(dobjs-1)))
 						apower = UnitShoot(unit, a[slot].weap, &dunits[idx], &absorbed[1], &dm, &dk)
 						shoots[0]++
 						spower[0] += uint64(apower) //TODO check this
@@ -545,6 +554,7 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 				}
 			}
 		}
+
 		for slot := 0; slot < dnum; slot++ {
 			for i := 0; int64(i) < dobjs; i++ {
 				rapidfire = true
@@ -552,7 +562,7 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 				if int(unit.slot_id) == slot { //TODO check this
 					// �������.
 					for rapidfire {
-						idx = int64(MyRand(0, int(aobjs-1)))
+						idx = int64(MyRand(0, uint32(aobjs-1)))
 						apower = UnitShoot(unit, d[slot].weap, &aunits[idx], &absorbed[0], &dm, &dk)
 						shoots[1]++
 						spower[1] += uint64(apower)
@@ -581,8 +591,10 @@ func DoBattle(a []Slot, anum int, d []Slot, dnum int) int {
 
 		fastdraw = CheckFastDraw(aunits, int(aobjs), dunits, int(dobjs))
 
+		fmt.Printf("LOG: a: %d b: %d\n", aobjs, dobjs)
 		aobjs -= int64(WipeExploded(&aunits, int(aobjs)))
 		dobjs -= int64(WipeExploded(&dunits, int(dobjs)))
+		fmt.Printf("LOG: a: %d b: %d\n\n", aobjs, dobjs)
 
 		// Round.
 		ptr.WriteString(fmt.Sprintf("i:%d;a:8:", rounds))
